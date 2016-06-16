@@ -17,7 +17,7 @@ ym=100;%y轴范围
 sink.x=0.5*xm;%基站x轴
 sink.y=0.5*ym;%基站y轴
 
-n=200;%节点总数
+n=100;%节点总数
 
 p=0.05;%簇头概率
 
@@ -58,7 +58,7 @@ r=0;
 %for CCH_D_Flag=0:1:1
 %     figure(CCH_D_Flag+1);
  
-    for num=1:1:5
+    for num=1:1:6
 %    for CCH_E_Flag=0:1:1
     for i=1:1:n
     S(i).G=0;%每一周期結束此变量为0
@@ -78,7 +78,10 @@ while (1)
     end
     cluster=0;%初始簇头数为0
     dead=0;%初始死亡节点数为0
-
+	%record
+    x(r)=r;
+    Total_E(r)=sum([S.E]);
+	y1(r)=Total_E(r);
     %% 记录死亡节点
      for i=1:1:n
         S(i).ECflag=0;
@@ -204,19 +207,21 @@ while (1)
          end
         %此节点接收各个簇头的控制信息消耗的能量，n个簇头，n条控制消息
          %此节点加入的簇的簇头时隙控制信息的总接收能耗
-%          if (num==5)
-         [CCH_E_Flag CCH_D_Flag]=Check_CCH_function(C,S,Er_Join,cluster,num);
-         Total_E(r)=sum([S.E]);
+         if (num~=6)
+            [CCH_E_Flag CCH_D_Flag]=Check_CCH_function(C,S,Er_Join,cluster,num);
+         end
+
 %          if r>1
 %              disp([num2str(r-1),' round cost ',num2str(Total_E(r-1)-Total_E(r))]);
 %          end
-%          end
          CHEt1=ETX*CM+Efs*CM*(sqrt(xm*ym))*(sqrt(xm*ym));%簇头单次广播成簇信息的能耗，此处可以考虑第二次广播为小范围广播，带参数
          %% 不同的簇头选取与数据传输方式
-
          %% 能量簇头与距离簇头均使能
             %将节点类型标记为距离簇头--D与能量簇头--E
-             for i=1:1:cluster
+         for i=1:1:cluster
+             if (num==6)
+               [CCH_E_Flag CCH_D_Flag]=Check_Cluster_CCH_function(C(i),S,Er_Join(i),cluster,num);
+             end
                if (CCH_E_Flag==1 && CCH_D_Flag==1)
                  ID_D=C(i).CCH_D.nodeN;
                  ID_E=C(i).CCH_E.nodeN;
@@ -521,42 +526,40 @@ while (1)
         disp(['after ' num2str(r) ' rounds, leave ',num2str(n-dead), ' points!']);
         break;
      end
-    x(r)=r;
-    y1(r)=n-Dead(r);
-%     y2(r)=S(50).E;
-%     y3(r)=S(40).E;
-%     y4(r)=S(30).E;
-%     y5(r)=S(20).E;
-%     y6(r)=S(10).E;
-%     if(y2(r)==0&&y3(r)==0&&y4(r)==0&&y5(r)==0&&y6(r)==0)    break;
-%     end
+%     x(r)=r;
+    %y1(r)=n-Dead(r);
+%     y1(r)=Total_E(r);
+
     if r==rmax
         break;
     end
 end
-A = [0 0 1; 0 1 0; 0 1 1; 1 0 0; 1 0 1];
+A = [0 0 1; 0 1 0; 0 1 1; 1 0 0; 1 0 1; 0.5 0 0];
 
-if num~=5
+if ((num~=5)&&(num~=6))
 %% 绘图
 % if (EEDBC_FLAG==0 && LEACH_FLAG==1 && CCH_E_Flag==0)
 if (CCH_D_Flag==0 && CCH_E_Flag==0)
-    plot(x,y1,'Color',A(1,:));hold on;
+    plot(x,y1,'Color',A(1,:),'linewidth',0.5);hold on;
     r=0;
 % elseif (EEDBC_FLAG==0 && LEACH_FLAG==1 && CCH_E_Flag==1)
 elseif (CCH_D_Flag==0 && CCH_E_Flag==1)
-    plot(x,y1,'Color',A(2,:));hold on;
+    plot(x,y1,'Color',A(2,:),'linewidth',0.5);hold on;
     r=0;
 % elseif (EEDBC_FLAG==1 && LEACH_FLAG==0 && CCH_E_Flag==0)
 elseif (CCH_D_Flag==1 && CCH_E_Flag==0)
-    plot(x,y1,'Color',A(3,:));hold on;
+    plot(x,y1,'Color',A(3,:),'linewidth',0.5);hold on;
     r=0;
 % elseif (EEDBC_FLAG==1 && LEACH_FLAG==0 && CCH_E_Flag==1)
 elseif (CCH_D_Flag==1 && CCH_E_Flag==1)
-    plot(x,y1,'Color',A(4,:));hold on;
+    plot(x,y1,'Color',A(4,:),'linewidth',0.5);hold on;
     r=0;
 end
+elseif (num==5)
+    plot(x,y1,'Color',A(5,:),'linewidth',0.5);hold on;
+    r=0;
 else
-    plot(x,y1,'Color',A(5,:));hold on;
+    plot(x,y1,'Color',A(6,:),'linewidth',0.5);hold on;
 end
 % plot(x,y2,'m-',x,y3,'b-',x,y4,'k-',x,y5,'r-',x,y6,'y-');
 x=0;
@@ -571,7 +574,9 @@ y1=0;
 %     LEACH_FLAG=1;
 %     EEDBC_FLANG=0;
 % end
-legend('LEACH','CCH_E Enabled','CCH_D Enabled','CCH_E and CCH_D Enabled','Game Theory Enabled');hold off;
+legend('LEACH','CCH_E Enabled','CCH_D Enabled','CCH_E and CCH_D Enabled','Game Theory Enabled','Cluster Game Theory Enabled');hold off;
 xlabel('Round');
 ylabel('residential energy');
+set(gca,'XLim',[0 2000]);
+set(gca,'YLim',[0 2]);
 % ylabel('number of nodes alive');
