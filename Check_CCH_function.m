@@ -92,6 +92,7 @@ for i=1:1:cluster
                     CEEr2=ERX*DM*(MemberN-Count_D-1);%收到此簇各个节点数据信息的能耗
                     CEEd1=EDA*DM*cc*(MemberN-Count_D);
                     CEEt2=ETX*DM*cc*(MemberN-Count_D)+Efs*DM*cc*(MemberN-Count_D)*S1(j).distance*S1(j).distance;%能量簇头将数据融合后发往总簇头的能耗   
+                    Total_E(1)=Total_E(1)+CEEd1+CEEr2+CEEt2;
                 end
                 CHEr1=Er_Join(i);%簇头收到此簇内各个节点加入信息的能耗
                 CDEt2=ETX*DM+Efs*DM*S1(j).distance*S1(j).distance;

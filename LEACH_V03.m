@@ -57,8 +57,9 @@ r=0;
 %CCH_D_Flag=0;
 %for CCH_D_Flag=0:1:1
 %     figure(CCH_D_Flag+1);
- 
-    for num=1:1:6
+
+    for num=6:1:7
+        Main_Total_E=0;
 %    for CCH_E_Flag=0:1:1
     for i=1:1:n
     S(i).G=0;%每一周期結束此变量为0
@@ -80,9 +81,9 @@ while (1)
     dead=0;%初始死亡节点数为0
 	%record
     x(r)=r;
-    Total_E(r)=sum([S.E]);
-	y1(r)=Total_E(r);
-    %% 记录死亡节点
+    Main_Total_E(r)=sum([S.E]);
+	y1(r)=Main_Total_E(r);
+     %% 记录死亡节点
      for i=1:1:n
         S(i).ECflag=0;
          % 初始化簇头节点的消息
@@ -207,7 +208,7 @@ while (1)
          end
         %此节点接收各个簇头的控制信息消耗的能量，n个簇头，n条控制消息
          %此节点加入的簇的簇头时隙控制信息的总接收能耗
-         if (num~=6)
+         if (num<6)
             [CCH_E_Flag CCH_D_Flag]=Check_CCH_function(C,S,Er_Join,cluster,num);
          end
 
@@ -217,10 +218,12 @@ while (1)
          CHEt1=ETX*CM+Efs*CM*(sqrt(xm*ym))*(sqrt(xm*ym));%簇头单次广播成簇信息的能耗，此处可以考虑第二次广播为小范围广播，带参数
          %% 不同的簇头选取与数据传输方式
          %% 能量簇头与距离簇头均使能
-            %将节点类型标记为距离簇头--D与能量簇头--E
+            %将节点类型标记为距离簇头--D与能量簇头--E&D
          for i=1:1:cluster
              if (num==6)
                [CCH_E_Flag CCH_D_Flag]=Check_Cluster_CCH_function(C(i),S,Er_Join(i),cluster,num);
+             elseif(num==7)
+               [CCH_E_Flag CCH_D_Flag]=Check_Sharply_Cluster_CCH_function(C(i),S,Er_Join(i),cluster);
              end
                if (CCH_E_Flag==1 && CCH_D_Flag==1)
                  ID_D=C(i).CCH_D.nodeN;
@@ -296,6 +299,7 @@ while (1)
                         CEEr2=ERX*DM*(packet_To_BS(i)-Count_D-1);%收到此簇各个节点数据信息的能耗
                         CEEd1=EDA*DM*cc*(packet_To_BS(i)-Count_D);
                         CEEt2=ETX*DM*cc*(packet_To_BS(i)-Count_D)+Efs*DM*cc*(packet_To_BS(i)-Count_D)*S(j).distance*S(j).distance;%能量簇头将数据融合后发往总簇头的能耗 
+                        S(j).E=S(j).E-CEEr2-CEEd1-CEEt2;
                         end
                         CHEr1=Er_Join(i);%簇头收到此簇内各个节点加入信息的能耗
                         CDEt2=ETX*DM+Efs*DM*S(j).distance*S(j).distance;
@@ -325,7 +329,6 @@ while (1)
                  end
                  C(i).group=G;
 %              end
-        
          elseif (CCH_E_Flag==1)
         %% 仅仅能量簇头
              %将节点类型标记为能量簇头--E
@@ -534,9 +537,9 @@ while (1)
         break;
     end
 end
-A = [0 0 1; 0 1 0; 0 1 1; 1 0 0; 1 0 1; 0.5 0 0];
+A = [0 0 1; 0 1 0; 0 1 1; 1 0 0; 1 0 1; 0.5 0 0;0.5 1 0.8];
 
-if ((num~=5)&&(num~=6))
+if ((num~=5)&&(num~=6)&&(num~=7))
 %% 绘图
 % if (EEDBC_FLAG==0 && LEACH_FLAG==1 && CCH_E_Flag==0)
 if (CCH_D_Flag==0 && CCH_E_Flag==0)
@@ -558,8 +561,11 @@ end
 elseif (num==5)
     plot(x,y1,'Color',A(5,:),'linewidth',0.5);hold on;
     r=0;
-else
+elseif (num==6)
     plot(x,y1,'Color',A(6,:),'linewidth',0.5);hold on;
+    r=0;
+else
+    plot(x,y1,'Color',A(7,:),'linewidth',0.5);hold on;
 end
 % plot(x,y2,'m-',x,y3,'b-',x,y4,'k-',x,y5,'r-',x,y6,'y-');
 x=0;
@@ -567,14 +573,14 @@ y1=0;
 %     LEACH_FLAG=0;
 %     EEDBC_FLAG=1;
    end
-% legend('LEACH','EEBC');hold off;
+legend('game theory','sharply game theory');hold off;
 % legend('Global Method','Partial Method');hold off;
 %end
 %     legend('LEACH','CCH_E Enabled','EEBC','EEBC_E Enabled');hold off;
 %     LEACH_FLAG=1;
 %     EEDBC_FLANG=0;
 % end
-legend('LEACH','CCH_E Enabled','CCH_D Enabled','CCH_E and CCH_D Enabled','Game Theory Enabled','Cluster Game Theory Enabled');hold off;
+% legend('LEACH','CCH_E Enabled','CCH_D Enabled','CCH_E and CCH_D Enabled','Game Theory Enabled','Cluster Game Theory Enabled');hold off;
 xlabel('Round');
 ylabel('residential energy');
 set(gca,'XLim',[0 2000]);

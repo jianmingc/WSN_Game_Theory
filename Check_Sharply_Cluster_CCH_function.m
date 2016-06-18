@@ -1,8 +1,8 @@
-function [E_Flag D_Flag]=Check_Cluster_CCH_function(CH_ALL, SN_ALL, Er_Join, cluster_num, num)
+function [E_Flag D_Flag]=Check_Cluster_CCH_function(CH_ALL, SN_ALL, Er_Join, cluster_num)
 
 global ETX ERX Efs
 global cc CM DM n xm ym
-
+global Total_E
 cluster=cluster_num;
 CHEt1=ETX*CM+Efs*CM*(sqrt(xm*ym))*(sqrt(xm*ym));
 Total_E(1)=0;
@@ -223,7 +223,6 @@ C4=CH_ALL;
                 CDEt2=ETX*DM*cc*Count_D+Efs*DM*cc*Count_D*S3(j).distance*S3(j).distance;%能量簇头将数据融合后发往总簇头的能耗
                 Total_E(3)=Total_E(3)+CDr1+CDr2+CDEt1+CDEt2;
         end
-        
     end
     %% LEACH协议运行
     if (C4.group.nodeN~=0)%si
@@ -251,17 +250,52 @@ C4=CH_ALL;
         end
     end
 
-switch find(Total_E==min(Total_E))
-    case 1
-        E_Flag=1;
-        D_Flag=1;
-    case 2
-        E_Flag=1;
-        D_Flag=0;
-    case 3
-        E_Flag=0;
-        D_Flag=1;
-    case 4
+    if (Total_E(1)==min(Total_E))
         E_Flag=0;
         D_Flag=0;
+    else
+        x=shapley(@eigen1,2);
+%         x
+%         for i=1:2
+%             si(i)=x(i)/sum(x);
+%         end
+        if x(1)>x(2)
+            E_Flag=0;
+            D_Flag=1;
+        else
+            E_Flag=1;
+            D_Flag=0;
+        end
+        E_Flag=0;
+        D_Flag=1;
+    end
+
+%%sharpley main loop
+function f=shapley(v,n)
+%合作对策模型程序 
+e=ones(1,n);      %[1 1]
+f=e*feval(v,e)/n; %收入的合理分配方案[0.5 0.5]
+x=ones(1,n);      %第m种合作方式（二进制表示）,[1 1 1]
+for m=1:2^n-2     %1:6
+    for i=1:n     %3
+        x(i)=floor(m/2^(n-i));%[m/(2^(3-i))],[m/4,m/2,m]
+        m=m-x(i)*2^(n-i);     %m-[4 2 1]x(i)
+    end
+    p=feval(v,x);%第m种合作方式的获利
+    s=sum(x);
+    w1=1/s/nchoosek(n,s);%加权因子[n中取S个元素的所有组合数]
+    w2=w1*s/(n-s);
+    f=f+p*w1*x-p*w2*(e-x);
 end
+%%sharply handler function
+function v=eigen1(x)
+global Total_E
+v=0;
+s=sum(x);
+Base_E=0;
+Base_E=Total_E(4);
+if x==[1 0]	v=Total_E(2);    end          %单人获利
+if x==[0 1]	v=Total_E(3);	end   %甲乙合作获利
+if s==2     v=Total_E(1);	end                  %三人合作获利
+v=v-Base_E;
+ return ;
